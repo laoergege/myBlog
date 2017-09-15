@@ -185,7 +185,6 @@ export default {
         this.$refs.catalog.appendChild(li);
 
         li.addEventListener('click', (e) => {
-          console.log(e.target)
           window.scrollTo(0, h.offsetTop - 80);
           this.deactivated();
           let active = li.className.concat(' current-title');

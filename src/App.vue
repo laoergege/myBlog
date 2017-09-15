@@ -13,10 +13,14 @@ import store from './store/store.js';
 
 export default {
   name: 'app',
-  store
+  store,
+  watch: {
+    $route() {
+      window.scrollTo(0,0);
+    }
+  }
 }
 </script>
 
 <style scoped>
-#id {}
 </style>
