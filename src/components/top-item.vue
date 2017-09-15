@@ -4,17 +4,20 @@
             <svg class="icon" aria-hidden="true">
                 <use v-bind:xlink:href="icon"></use>
             </svg>
+            &nbsp;
             <span class="md-title"> {{markbook}}</span>
         </h1>
 
         <md-layout md-gutter :md-column-small="true">
 
-            <md-layout  md-align="center" :md-flex="33" v-for="(top,index) in tops" :key="index">
-                <md-card class="md-warn item" :md-with-hover="true">
-                    <md-card-header>
-                        <div class="md-title item-content" ref="top">{{top}}</div>
-                    </md-card-header>
-                </md-card>
+            <md-layout md-align="center" v-for="(top,index) in tops" :key="index">
+                <md-theme :md-name="theme">
+                    <md-card class="item hvr-grow-rotate" :md-with-hover="true" @click.native="goArticle(top)">
+                        <md-card-content class="item-content">
+                            <div ref="top">{{top.title}}</div>
+                        </md-card-content>
+                    </md-card>
+                </md-theme>
             </md-layout>
 
         </md-layout>
@@ -23,6 +26,9 @@
 
 <script>
 import '../assets/js/iconfont';
+import {
+    ARTICLE
+} from "../store/mutation-types";
 
 export default {
     name: 'topItem',
@@ -46,12 +52,29 @@ export default {
         }
     },
     mounted() {
+        if (this.$refs.top) {
+            // 多行文本溢出隐藏
+            this.$refs.top.map(
+                (top) => {
+                    $clamp(top, { clamp: 2 });
+                }
+            )
+        }
+    },
+    updated() {
         // 多行文本溢出隐藏
         this.$refs.top.map(
             (top) => {
-                $clamp(top, { clamp: 'auto' });
+                $clamp(top, { clamp: 2 });
             }
         )
+    },
+    methods: {
+        goArticle(article) {
+            sessionStorage.setItem(article.filename, JSON.stringify(article));
+            this.$store.commit(ARTICLE, article);
+            this.$router.push(`/${article.bookID.bookname}/${article.filename}`);
+        }
     }
 }
 </script>
@@ -72,18 +95,20 @@ export default {
 }
 
 .item {
-    margin: 10px;
+    margin: 3px;
+    padding: 2rem; 
 }
 
 .item .item-content {
+    font-size: 18px;
     max-height: 4rem;
     overflow: hidden;
-    text-align: center;
+    text-align: center; 
 }
 
 @media screen and (max-width: 960px) {
     .item .item-content {
-        width: 300px;
+        width: 100vh;
         max-height: 2rem;
     }
 }

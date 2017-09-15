@@ -1,5 +1,5 @@
 <template>
-  <div ref="container">
+  <div ref="container" class="a-container">
     <md-whiteframe md-tag="md-toolbar" md-elevation="2" class="a_toolbar" md-theme="light-blue">
       <div class="md-toolbar-container">
         <md-button class="md-icon-button" @click="backHome">
@@ -14,74 +14,25 @@
       </div>
     </md-whiteframe>
 
-    <div class="info">
-      <md-avatar>
-        <img src="../assets/avatar.jpg" alt="Avatar">
-      </md-avatar>
-
-      <md-subheader>
-        <span style="font-size: 18px;">laoergege</span><br>
-        <span class="detail"> 2017.08.16 01:37 字数 148 阅读 1评论 0喜欢 0</span>
-      </md-subheader>
-    </div>
-
-    <div class="markdown-body" v-html="content" ref="mdBody">
-    </div>
-
-    <div class="comments">
-      <md-list>
-        <md-list-item>
+    <transition name="fade">
+      <div v-if="!loading">
+        <div class="info">
           <md-avatar>
-            <img src="https://placeimg.com/40/40/people/5" alt="People">
+            <img src="../assets/avatar.jpg" alt="Avatar">
           </md-avatar>
 
-          <span>Abbey Christansen</span>
-
-          <md-button class="md-icon-button md-list-action">
-            <md-icon class="md-primary">chat_bubble</md-icon>
-          </md-button>
-        </md-list-item>
-
-        <md-list-item>
-          <md-avatar>
-            <img src="https://placeimg.com/40/40/people/1" alt="People">
-          </md-avatar>
-
-          <span>Alex Nelson</span>
-
-          <md-button class="md-icon-button md-list-action">
-            <md-icon class="md-primary">chat_bubble</md-icon>
-          </md-button>
-        </md-list-item>
-
-        <md-list-item>
-          <md-avatar>
-            <img src="https://placeimg.com/40/40/people/6" alt="People">
-          </md-avatar>
-
-          <span>Mary Johnson</span>
-
-          <md-button class="md-icon-button md-list-action">
-            <md-icon>chat_bubble</md-icon>
-          </md-button>
-        </md-list-item>
-      </md-list>
-    </div>
-
-    <md-speed-dial md-mode="scale" class="md-fab-bottom-right">
-      <md-button class="md-fab" md-fab-trigger>
-        <md-icon md-icon-morph>close</md-icon>
-        <md-icon>share</md-icon>
-      </md-button>
-
-      <md-button class="md-fab md-mini md-clean">
-        <md-icon>arrow_up</md-icon>
-      </md-button>
-
-      <md-button class="md-fab md-mini md-clean">
-        <md-icon>share</md-icon>
-      </md-button>
-    </md-speed-dial>
+          <div>
+            <span style="font-size: 18px;">laoergege</span>
+            <br>
+            <span class="detail"> {{article.create_at | date}} 字数 {{article.wordCount}} 阅读 {{article.readCount}} 评论 0 喜欢 {{article.favs}}</span>
+          </div>
+        </div>
+        <div class="markdown-body" v-html="content" ref="mdBody">
+        </div>
+        <div id="comment" ref="comment" class="comments"></div>
+      </div>
+      <md-spinner v-else md-indeterminate class="md-primary loading" :md-size="60"></md-spinner>
+    </transition>
 
     <md-sidenav class="md-right md-fixed" ref="rightSidenav">
       <md-toolbar>
@@ -89,9 +40,7 @@
           <h3 class="md-title" ref="title">{{title}}</h3>
         </div>
       </md-toolbar>
-      <md-theme>
-        <div ref="catalog" class="catalog"></div>
-      </md-theme>
+      <catalog :data=""></catalog>
     </md-sidenav>
 
   </div>
@@ -99,12 +48,23 @@
 
 <script>
 import axios from 'axios';
+import config from '../config'
 import showdown from 'showdown';
+import Catelog from './catalog'
+
 // markdown 样式
 import "github-markdown-css/github-markdown.css"
+
 // code 高亮 样式
 import "highlight.js/styles/atom-one-light.css"
 import hljs from "highlight.js/lib/highlight"
+import { mapState } from "vuex"
+
+// 导入 gitment 插件
+// import 'gitment/style/default.css'
+// const Gitment = require('gitment/dist/gitment.browser.js');
+// import 'gitment/dist/gitment.browser.js'
+// console.log(Gitment)
 
 // 注册需要高亮的语言
 hljs.registerLanguage('javascript', require('highlight.js/lib/languages/javascript'));
@@ -119,56 +79,59 @@ export default {
     return {
       content: '',
       catalog: new Map(),
-      title: 'Angular数据检测及单向数据流',
-      section: 'Angular数据检测及单向数据流',
+      title: '',
+      section: '',
       lastSection: '',
-      flag: false // 渲染标记
+      flag: false, // 渲染标记,
+      gitment: null,
+      progress: 0,
+      loading: true,
     }
   },
   computed: {
     isOpen() {
       return this.$store.state.openSidenav;
-    }
-  },
-  props: {
-    articleAddr: {
-      type: String,
-      require: true,
-      default: 'http://localhost:8080/static/markdown/angular.md'
-    }
+    },
+    ...mapState({
+      article(state) {
+        return state.article || JSON.parse(sessionStorage.getItem(this.$route.params.id))
+      }
+    }),
   },
   methods: {
-    async getArticle() {
-      let res = await axios({ headers: { 'Content-Type': 'text/plain' }, url: this.articleAddr });
-      let md = res.data;
-      return md;
-    },
     openRSideNav() {
       this.$refs.rightSidenav.toggle();
     },
     onScorll(e) {
-      // 阅读到底部
-      if (e.target.body.scrollHeight == (e.target.body.scrollTop + window.innerHeight)) {
-        this.section = this.lastSection;
+      if (document.documentElement.scrollTop == 0) {
+        this.section = this.title;
         return;
       }
       for (let [key, value] of this.catalog.entries()) {
-        if (e.target.body.scrollTop <= value && e.target.body.scrollTop != 0) {
-          if (this.section == key) {
-            break;
-          } else {
-            this.section = key;
-            break;
-          }
-        } else {
-          // 回滚到顶部
-          this.section = this.title;
+        if (window.scrollY <= value) {
+          this.section = key;
+          break;
         }
       }
     },
     backHome() {
       this.$router.back();
+    },
+    init() {
+      this.title = this.article.title;
+      this.section = this.article.title;
+      this.$store.dispatch('getArticle', this.article).then(
+        (md) => {
+          this.content = converter.makeHtml(md);
+          setTimeout(() => {
+            this.loading = false;
+          }, 500);
+        }
+      )
     }
+  },
+  components: {
+    catalog: Catelog
   },
   watch: {
     isOpen: function(val) {
@@ -176,12 +139,12 @@ export default {
     }
   },
   created() {
-    this.getArticle().then((md) => {
-      this.content = converter.makeHtml(md);
-    })
+    this.init();
   },
   mounted() {
+
     $clamp(this.$refs.title, { clamp: 1 });
+
   },
   updated() {
     if (!this.flag) {
@@ -191,29 +154,37 @@ export default {
         hljs.highlightBlock(block)
       });
 
+      // 渲染目录
       let hs = this.$refs.mdBody.querySelectorAll('h1,h2,h3,h4,h5');
       hs.forEach((h, index, array) => {
-        let i = (index + 1) == array.length ? index : (index + 1);
-        this.catalog.set(h.innerText, array[i].offsetTop - 85);
+        let i = (index + 1) == array.length ? 0 : (index + 1);
+        this.catalog.set(h.innerText, i == 0 ? document.documentElement.scrollHeight : (array[i].offsetTop - 80));
 
-        let ch = h.cloneNode(true);
+        // let ch = h.cloneNode(true);
 
-        this.$refs.catalog.appendChild(ch);
+        // this.$refs.catalog.appendChild(ch);
 
         ch.addEventListener('click', () => {
-          document.body.scrollTop = h.offsetTop - 80;
+          window.scrollTo(0, h.offsetTop - 80);
         })
-
-
       })
 
       this.lastSection = hs[hs.length - 1].innerText;
 
-      window.addEventListener('scroll', this.onScorll); // 监听阅读位置
+      // 监听阅读位置
+      document.addEventListener('scroll', this.onScorll);
+
+      // 渲染评论
+      this.gitment = new Gitment({
+        id: this.article._id, // optional
+        ...config.GITMEN_CONFIG
+      })
+
+      this.gitment.render(this.$refs.comment)
 
       this.flag = true;
-      console.log(1)
     }
+
   },
   beforeDestroy() {
     window.removeEventListener('scroll', this.onScorll);
@@ -222,6 +193,18 @@ export default {
 </script>
 
 <style lang="less" scoped>
+.a-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.a-progress {
+  position: fixed;
+  top: 0;
+  z-index: 100;
+}
+
 .a_toolbar {
   position: fixed;
   width: 100%;
@@ -229,14 +212,14 @@ export default {
 }
 
 .info {
-  padding: 80px 20px 0; 
+  padding: 100px 20px 20px;
   display: flex;
   justify-content: center;
   align-items: center;
   .md-avatar {
     margin: 0 0.5rem !important;
   }
-  .detail{
+  .detail {
     font-size: 12px;
     color: #969696;
   }
@@ -244,15 +227,24 @@ export default {
 
 .markdown-body {
   box-sizing: border-box;
-  width: 80%;
-  padding:0 45px;
-  margin: 0 auto;
+  width: 60%;
+  padding: 0 45px;
+  margin: 2rem auto;
+}
+
+svg:not(.md-image) {
+  height: inherit;
 }
 
 .comments {
-  display: flex;
-  justify-content: center;
-  width: 80%;
+  width: 60%;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.loading {
+  margin: auto 0;
+  align-self: center;
 }
 
 @media (max-width: 767px) {

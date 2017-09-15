@@ -1,6 +1,10 @@
 <template>
   <div id="app">
-    <router-view></router-view>
+
+    <keep-alive exclude="article">
+      <router-view></router-view>
+    </keep-alive>
+
   </div>
 </template>
 
@@ -14,7 +18,5 @@ export default {
 </script>
 
 <style scoped>
-#id{
-
-}
+#id {}
 </style>

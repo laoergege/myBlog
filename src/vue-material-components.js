@@ -5,30 +5,16 @@ import 'vue-material/dist/vue-material.css'
 Vue.use(VueMaterial.MdCore)
 
 Vue.material.registerTheme('default', {
-  primary: 'teal',
+  primary: 'blue',
   accent: 'white',
-  warn:  {
-    color: 'white',
-    hue: 900,
-    textColor: 'black' // text will be white
-  },
-  background:  {
-    color: 'grey',
-    hue: '200',
-    textColor: 'black'
-  }
+  warn: 'grey'
 })
 
 Vue.material.registerTheme('item', {
-  primary: {
-    color: 'indigo',
-    hue: 900,
-    textColor: 'black' // text will be black
-  },
-  accent: {
+  accent: 'blue',
+  background: {
     color: 'grey',
-    hue: 900,
-    textColor: 'blue' // text will be white
+    hue: '100',
   }
 })
 
@@ -70,3 +56,9 @@ Vue.use(VueMaterial.MdList);
 
 import 'vue-material/dist/components/mdSpeedDial/index.css'
 Vue.use(VueMaterial.MdSpeedDial);
+
+import 'vue-material/dist/components/mdSubheader/index.css'
+Vue.use(VueMaterial.MdSubheader);
+
+import 'vue-material/dist/components/mdStepper/index.css'
+Vue.use(VueMaterial.MdStepper);

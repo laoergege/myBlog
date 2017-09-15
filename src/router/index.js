@@ -11,6 +11,6 @@ export default new Router({
       path: '/',
       component: Home
     },
-    { path: '/article', name: 'article', component: Article }
+    { path: '/:book/:id', name: 'article', component: Article }
   ]
 })
