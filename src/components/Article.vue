@@ -40,7 +40,10 @@
           <h3 class="md-title" ref="title">{{title}}</h3>
         </div>
       </md-toolbar>
-      <catalog :data=""></catalog>
+      <div class="catalog">
+        <div class="track"></div>
+        <ul ref="catalog" class="content"></ul>
+      </div>
     </md-sidenav>
 
   </div>
@@ -50,7 +53,7 @@
 import axios from 'axios';
 import config from '../config'
 import showdown from 'showdown';
-import Catelog from './catalog'
+import Vue from 'vue';
 
 // markdown 样式
 import "github-markdown-css/github-markdown.css"
@@ -108,8 +111,15 @@ export default {
         return;
       }
       for (let [key, value] of this.catalog.entries()) {
-        if (window.scrollY <= value) {
+        if (window.scrollY < value) {
           this.section = key;
+          let target = document.querySelector(`#title-${value}`);
+          let active;
+          if (target) {
+            this.deactivated();
+            active = target.className.concat(' current-title');
+            target.className = active;
+          }
           break;
         }
       }
@@ -128,10 +138,11 @@ export default {
           }, 500);
         }
       )
+    },
+    deactivated() {
+      let deactivated = document.querySelector('.current-title');
+      deactivated.className = deactivated.className.replace('current-title', '');
     }
-  },
-  components: {
-    catalog: Catelog
   },
   watch: {
     isOpen: function(val) {
@@ -157,16 +168,29 @@ export default {
       // 渲染目录
       let hs = this.$refs.mdBody.querySelectorAll('h1,h2,h3,h4,h5');
       hs.forEach((h, index, array) => {
+
         let i = (index + 1) == array.length ? 0 : (index + 1);
-        this.catalog.set(h.innerText, i == 0 ? document.documentElement.scrollHeight : (array[i].offsetTop - 80));
+        let top = (i == 0 ? document.documentElement.scrollHeight : (array[i].offsetTop - 80));
+        this.catalog.set(h.innerText, top);
 
-        // let ch = h.cloneNode(true);
+        let li = document.createElement('li');
+        li.id = `title-${top}`;
+        if (index == 0) {
+          li.className = `title-${h.tagName} current-title`
+        } else {
+          li.className = `title-${h.tagName}`;
+        }
+        li.innerText = h.innerText;
 
-        // this.$refs.catalog.appendChild(ch);
+        this.$refs.catalog.appendChild(li);
 
-        ch.addEventListener('click', () => {
+        li.addEventListener('click', (e) => {
+          console.log(e.target)
           window.scrollTo(0, h.offsetTop - 80);
-        })
+          this.deactivated();
+          let active = li.className.concat(' current-title');
+          li.className = active;
+        }, false)
       })
 
       this.lastSection = hs[hs.length - 1].innerText;
@@ -257,28 +281,28 @@ svg:not(.md-image) {
   }
 }
 
-.catalog {
-  padding: 0 0.5rem;
-  cursor: pointer;
 
-  h1 {
-    padding: 0 0.3rem!important
-  }
-  h2 {
-    padding: 0 0.5rem!important
-  }
-  h3 {
-    margin-left: 0 0.7rem!important
-  }
-  h4 {
-    padding: 0 0.9rem!important
-  }
-  h5 {
-    padding: 0 1.1rem!important
-  }
-  h6 {
-    padding: 0 1.3rem!important
-  }
+
+
+
+/**目录**/
+
+.catalog {
+  display: flex;
+}
+
+.track {
+  height: auto;
+  border: 1px solid #9e9e9e;
+  align-self: stretch;
+  position: relative;
+  left: 28px;
+  z-index: -1;
+}
+
+ul.content {
+  cursor: pointer;
+  list-style-type: none;
 }
 </style>
 
